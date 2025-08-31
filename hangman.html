@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hangman Game</title>
+  <style>
+    body {
+      background: black;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    h1 { font-size: 40px; }
+    #letters button {
+      margin: 5px;
+      padding: 10px;
+      font-size: 18px;
+      border: none;
+      background: #e4e4e4;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    #letters button:disabled {
+      background: gray;
+      color: white;
+      cursor: not-allowed;
+    }
+    #question {
+      font-size: 20px;
+      margin: 20px 0;
+    }
+    #answer {
+      font-size: 28px;
+      letter-spacing: 10px;
+      margin: 20px 0;
+    }
+    #lives {
+      margin-top: 20px;
+      font-size: 22px;
+      font-weight: bold;
+    }
+    #result {
+      margin-top: 30px;
+      font-size: 26px;
+      font-weight: bold;
+      color: yellow;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>HANGMAN GAME</h1>
+  <p id="question">Loading question...</p>
+  <div id="answer"></div>
+
+  <div id="letters"></div>
+
+  <div id="lives">You have 10 lives</div>
+  <div id="result"></div>
+
+  <script>
+    const apiURL = "http://codeapi.net.cws18.my-hosting-panel.com/hangman.php";
+    let currentAnswer = "";
+    let displayAnswer = [];
+    let lives = 10;
+
+    // Generate A-Z buttons
+    function generateLetters() {
+      const lettersDiv = document.getElementById("letters");
+      lettersDiv.innerHTML = "";
+      for (let i = 65; i <= 90; i++) {  // A-Z ASCII
+        let letter = String.fromCharCode(i);
+        let btn = document.createElement("button");
+        btn.textContent = letter;
+        btn.onclick = () => checkLetter(letter, btn);
+        lettersDiv.appendChild(btn);
+      }
+    }
+
+    // Fetch question and set up game
+    async function loadQuestion() {
+      try {
+        const res = await fetch(apiURL);
+        const data = await res.json();
+        const randomQ = data[Math.floor(Math.random() * data.length)];
+        
+        document.getElementById("question").textContent = randomQ.Question;
+        currentAnswer = randomQ.Answer.toUpperCase();
+        displayAnswer = Array(currentAnswer.length).fill("_");
+        updateAnswer();
+      } catch (err) {
+        document.getElementById("question").textContent = "Error loading question!";
+      }
+    }
+
+    // Update displayed answer
+    function updateAnswer() {
+      document.getElementById("answer").textContent = displayAnswer.join(" ");
+    }
+
+    // Check guessed letter
+    function checkLetter(letter, btn) {
+      btn.disabled = true;
+      let found = false;
+
+      for (let i = 0; i < currentAnswer.length; i++) {
+        if (currentAnswer[i] === letter) {
+          displayAnswer[i] = letter;
+          found = true;
+        }
+      }
+
+      if (!found) {
+        lives--;
+        document.getElementById("lives").textContent = `You have ${lives} lives`;
+        if (lives <= 0) {
+          document.getElementById("result").textContent = "💀 Game Over! The word was " + currentAnswer;
+          disableAll();
+        }
+      } else {
+        updateAnswer();
+        if (!displayAnswer.includes("_")) {
+          document.getElementById("result").textContent = "🎉 You Won!";
+          disableAll();
+        }
+      }
+    }
+
+    // Disable all buttons
+    function disableAll() {
+      document.querySelectorAll("#letters button").forEach(btn => btn.disabled = true);
+    }
+
+    // Start game
+    generateLetters();
+    loadQuestion();
+  </script>
+</body>
+</html>
